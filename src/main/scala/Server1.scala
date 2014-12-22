@@ -1,14 +1,15 @@
 // akka-http: routing
 
-import java.util.Base64
-
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
 import akka.http.Http
 import akka.http.server.Route
 import akka.http.server.Directives._
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.MaterializedMap
 
 import scala.util.Random
+
+import java.util.Base64
 
 object Server1 extends App {
   implicit val system = ActorSystem()
@@ -17,7 +18,7 @@ object Server1 extends App {
 
   val binding = Http().bind("localhost", 8080)
 
-  binding startHandlingWith Route.handlerFlow {
+  val materializedMap: MaterializedMap = binding startHandlingWith Route.handlerFlow {
     path("") {
       get {
         complete("http-exp0 Server1")
@@ -40,7 +41,7 @@ object Server1 extends App {
           throw new Exception("Crash!!!")
         } ~
         path("shutdown") {
-          system.shutdown()
+          binding.unbind(materializedMap).onComplete(_ => system.shutdown())
           complete("Shuting down...")
         }
       }
